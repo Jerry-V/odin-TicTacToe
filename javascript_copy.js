@@ -82,11 +82,12 @@ const displayController = (() => {
     
     return {
         refreshDisplay,
+        resetBoard
     }
 })();
 
 const gameController = (() => {
-    const player1 = 'X';
+    const player1 = `X`;
     const player2 = 'O';
     let currentPlayer = player1;
     const victoryConditions = [
@@ -177,9 +178,18 @@ const gameController = (() => {
     
     const resultsMesssage_Reset = () => {
         messageDiv.innerText = ``;
+        messageDiv.classList.add("invisible");
     }
     
-
+    const resultsMessage = (inputPlayer, isWin) => {
+        if (isWin === true) {
+            messageDiv.innerText = `Player ${inputPlayer} Won.`;
+            messageDiv.classList.remove("invisible");
+        } else {
+            messageDiv.innerText = `Round is a Draw.`;
+            messageDiv.classList.remove("invisible");
+        }
+    }
     
     const stopRound = () => {
         // How to remove eventListeners
@@ -192,47 +202,72 @@ const gameController = (() => {
         currentPlayer = player1;
     }
     
+    // Using event handlers with drop down menus:
+    //  What event handler do I need to use for a drop down menu list in JavaScript?
+    //  https://stackoverflow.com/questions/33932395/what-event-handler-do-i-need-to-use-for-a-drop-down-menu-list-in-javascript
+    //  https://www.w3schools.com/jsref/event_onchange.asp
+    const dropdownItem = document.getElementById(`gameModeSelect`);
+    let gameMode = dropdownItem.value;
+    // console.log(`value before f: ${gameMode}`); 
+    document.getElementById("gameModeSelect").onchange = function() {
+        getSelection();
+        stopRound();
+        displayController.resetBoard();
+    };
+    
+    const getSelection = () => {
+        gameMode = dropdownItem.value;
+        // console.log(`value after: ${gameMode}`);
+        console.log(`Selected: ${dropdownItem.value}`);
+    }
+    
     const startRound = () => {
         // Pass Parameters into an even listener
         // https://www.w3schools.com/js/js_htmldom_eventlistener.asp
         player = player1;
         for (let i = 0; i < cells.length; i++) {
-            cells[i].addEventListener('click', function(){ playerMove(i, currentPlayer); });
+            cells[i].addEventListener('click', function(){ playerMove(i, currentPlayer, gameMode); });
         }
     }
     
     startRound();
     
-    const playerMove = (index, currentPlayer) => {
+    const playerMove = (index, inputPlayer, gameMode) => {
+        console.log(gameMode);
         let currentBoard = gameBoard.listCells();
+        console.log(typeof(gameMode));
+        
         if (isEmpty(index)) {
-            if (currentPlayer === player1) {
-                gameBoard.setCell(index, currentPlayer);
+
+            gameBoard.setCell(index, inputPlayer);
+            
+            if (checkWin(currentBoard, inputPlayer)) {
+                resultsMessage(inputPlayer, true);
+                stopRound();
+            } else if (checkFull()) {
+                resultsMessage(inputPlayer, false);
+                stopRound();
+            } else if (gameMode === `computer`) {
+                changePlayer();    
+                let choice = minimax(currentBoard, currentPlayer).index;
+                gameBoard.setCell(choice, currentPlayer);
+                
                 if(checkWin(currentBoard, currentPlayer)) {
-                    messageDiv.innerText = `Player ${currentPlayer} Won.`;
+                    resultsMessage(currentPlayer, true);
                     stopRound();
                 } else if (checkFull()) {
-                    messageDiv.innerText = `Round is a Draw.`;
+                    resultsMessage(currentPlayer, false);
                     stopRound();
                 } else {
                     changePlayer();
-                    let choice = minimax(currentBoard, player2).index;
-                    gameBoard.setCell(choice, player2);
-                    if(checkWin(currentBoard, player2)) {
-                        messageDiv.innerText = `Player ${player2} Won.`;
-                        stopRound();
-                    } else if (checkFull()) {
-                        messageDiv.innerText = `Round is a Draw.`;
-                        stopRound();
-                    } else {
-                        changePlayer();
-                    }
                 }
+            } else if (gameMode === `human`) {
+                changePlayer()
             } else {
-                console.error(`Error in playerMove`)
+                console.error(`turn bug`)
             }
-
         }
+
         displayController.refreshDisplay();
     }
     
@@ -315,11 +350,3 @@ const gameController = (() => {
         resultsMesssage_Reset, emptySpots
     }
 })();
-
-// const AIModule = (() => {
-    
-    
-//     return {
-//         minimax,
-//     }
-// })();

@@ -10,6 +10,13 @@
 </head>
 <body>
     <div id="main-container">
+        <div id="gameMode-container">
+            <label for="GameModes">Select Opponent:</label>
+            <select name="GameModes" id="gameModeSelect" onchange="getSelection()">
+                <option value="human">Human</option>
+                <option value="computer">Computer</option>
+            </select>
+        </div>
         <div id="grid-container">
             <div class="cell" id="cell-01"></div>
             <div class="cell" id="cell-02"></div>
@@ -21,8 +28,8 @@
             <div class="cell" id="cell-08"></div>
             <div class="cell" id="cell-09"></div>
         </div>
-        <button id="reset-btn">reset</button>
-        <div id="results-msg"></div>
+        <button id="reset-btn">RESET</button>
+        <div class="invisible" id="results-msg"></div>
     </div>
 </body>
 </html>
