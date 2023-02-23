@@ -1,29 +1,30 @@
-// function for gameBoard information
 const gameBoard = (() => {
-    // create an array with nothing but 0's for 9 indexes
-    // Initializing an Array with a Single Value:
-    // https://stackoverflow.com/questions/4049847/initializing-an-array-with-a-single-value#28507704
+    // Create an array where its values are its keys:
+    // How to create an array of numbers in javascript
+    // https://www.cloudhadoop.com/javascript-create-array-numbers/
+    const defaultArray = [...Array(9).keys()];
     
-    const defaultValue = 'a';
-    const cellsArray = Array(9).fill(defaultValue);
+    // Note: javascript will sometimes pass objects (like arrays)
+    // as by-reference instead of by-value. Thus changing
+    // cellsArray would change defaultArray (2 names, same memory chunk).
+    // https://www.geeksforgeeks.org/pass-by-value-and-pass-by-reference-in-javascript/
+    let cellsArray = Object.create(defaultArray);
     
-    // set cell value function
-    // set a specific cell's value to either 1, or 2
-    const setCell = (cellIndex, playerSymbol) => {
-        if (cellIndex <= 8 && cellIndex >= 0) {
-                cellsArray[cellIndex] = playerSymbol;
-                // console.log(gameBoard.listCells());
+    const maxIndex = cellsArray.length - 1;
+    
+    const setCell = (index, value) => {
+        if (index <= maxIndex && index >= 0) {
+            cellsArray[index] = value;
         } else {
-            return console.error('index must be 0 to 8');
+            return console.error('gameBoard.setCell() Error');
         }
     }
     
-    // get cell value function
-    const getCell = cellIndex => {
-        if (cellIndex <= 8 && cellIndex >= 0) {
-            return cellsArray[cellIndex];
+    const getCell = (index) => {
+        if (index <= maxIndex && index >= 0) {
+            return cellsArray[index];
         } else {
-            return console.error('index must be 0 to 8');
+            return console.error('gameBoard.getCell() Error');
         }
     }
     
@@ -31,200 +32,63 @@ const gameBoard = (() => {
         return cellsArray;
     }
     
-    // reset all cell values function
-    // resets all of the cell's to the value 0 (blank)
-    const resetCells = () => {
-        cellsArray.fill(defaultValue);
-        displayController.refreshCells();
-    }
-    
-    const getDefault = () => {
-        return defaultValue;
+    const resetCellsArray = () => {
+        cellsArray = Object.create(defaultArray);
     }
     
     return {
         setCell,
         getCell,
         listCells,
-        resetCells,
-        getDefault,
+        resetCellsArray,
     }
 })();
 
-// function for updating the display
 const displayController = (() => {
-    // how to grab all cells at once
+    // How to grab all cells at once:
     // https://www.w3schools.com/js/js_htmldom_nodelist.asp
     const cells = document.getElementsByClassName('cell');
     
-    const refreshCells = () => {
+    const refreshDisplay = () => {
+        // Using regex to logical test:
+        // https://www.w3schools.com/jsref/jsref_regexp_0-9.asp
+        // https://www.w3schools.com/jsref/jsref_regexp_test.asp
+        let pattern = /[0-9]/;
+        let boardArray = gameBoard.listCells();
         for (let i = 0 ; i < cells.length; i++) {
-            cells[i].innerText = gameBoard.getCell(i);
-        }        
+            // Check if not a number, if so then display
+            if(!pattern.test(boardArray[i])) {
+                cells[i].innerText = gameBoard.getCell(i);
+            } else {
+                cells[i].innerText = '';
+            }
+        }
     };
     
-    refreshCells();
+    refreshDisplay();
     
     const resetButton = document.getElementById("reset-btn");
     
     const resetBoard = () => {
-        // console.log('Before: ' + gameBoard.listCells());
-        gameBoard.resetCells();
-        refreshCells();
+        gameBoard.resetCellsArray();
+        refreshDisplay();
         gameController.startRound();
         gameController.resultsMesssage_Reset();
-        // console.log('After: ' + gameBoard.listCells());
     }
     
     resetButton.addEventListener('click', resetBoard);
     
     return {
-        refreshCells,
+        refreshDisplay,
+        resetBoard
     }
 })();
 
 const gameController = (() => {
-    
-    const playerFactory = (symbol) => {
-        return symbol;
-    }
-    
-    const player1 = playerFactory('X');
-    const player2 = playerFactory('O');
-    
-    let player = player1;
-    
-    const getPlayer = () => {
-        return player;
-    }
-    
-    const changePlayer = () => {
-        if (player === player1) {
-            player = player2;
-            console.log('player changed:');
-            console.log(player);
-        } else {
-            player = player1;
-            console.log('player changed:');
-            console.log(player);
-        }
-    }
-    
-    // Differences between HTMLCollection vs. NodeList
-    // https://www.w3schools.com/jsref/met_document_queryselectorall.asp
-    const cells = document.getElementsByClassName("cell");
-    
-    // Need to be careful about parameter names overwriting module names
-    // having a parameter name called player will cause subsequent uses
-    // of "player" to refer to that parameter and NOT the module-scoped "player"
-    const playerMove =  (cell, currentPlayer) => {
-        if (isEmptyCell(cell)) {
-            gameBoard.setCell(cell,currentPlayer);
-            if(checkGameEnd()) {
-                endRound();
-            } else {
-                changePlayer();
-                computerMove(computerChoice_Random());
-                // computerExpertMove(gameBoard.listCells(), player2);
-            }
-        }
-        displayController.refreshCells();
-    }
-    
-    const computerMove = (cell) => {
-        gameBoard.setCell(cell,player);
-        if(checkGameEnd()) {
-            endRound();
-        } else {
-            changePlayer();
-        }
-    }
-        
-    const computerExpertMove = () => {
-        
-        let bestChoice = minimax(gameBoard.listCells(), player2);
-        
-        console.log(bestChoice);
-        
-        console.log(`minimax ended`);
-        
-        gameBoard.setCell(bestChoice, player2);
-        
-        if(checkGameEnd()) {
-            endRound();
-        } else {
-            changePlayer();
-        }
-    }
-    
-    const computerChoice_Random = () => {
-        const validChoices = []
-        const cells = gameBoard.listCells();
-        const defaultValue = gameBoard.getDefault();
-        
-        // record indeces of the unmarked cells
-        let currentIndex = cells.indexOf(defaultValue);
-        while (currentIndex !== -1) {
-            validChoices.push(currentIndex);
-            currentIndex = cells.indexOf(defaultValue, currentIndex + 1);
-        }
-        
-        const computerRandomChoice =  Math.floor((Math.random() * (validChoices.length)));
-        
-        return validChoices[computerRandomChoice];
-    }
-        
-    const startRound = () => {
-        // Pass Parameters into an even listener
-        // https://www.w3schools.com/js/js_htmldom_eventlistener.asp
-        player = player1;
-        for (let cell = 0; cell < cells.length; cell++) {
-            cells[cell].addEventListener('click', function(){ playerMove(cell, player); });
-        }
-    }
-    
-    startRound();
-    
-    const endRound = () => {
-        // How to remove eventListeners
-        // How To Remove All Event Listeners From An Element Using JavaScript:
-        // https://learnshareit.com/how-to-remove-all-event-listeners-from-an-element-using-javascript/
-        for (let cell = 0; cell < cells.length; cell++) {
-            const clone = cells[cell].cloneNode(true);
-            const replace = cells[cell].replaceWith(clone);
-            // console.log(cell);
-        }
-    }
-    
-    const checkDraw = () => {
-        const cells = gameBoard.listCells();
-        
-        // Difference between for...in and for...of loops
-        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Loops_and_iteration#for...of_statement
-        let unmarkedCellCount = 0;
-        for (const value of cells) {
-            if ((value != player1) && (value != player2)) {
-                unmarkedCellCount++;
-            }
-        }
-        
-        // CheckVictory is called to see if the last move is a winning move
-        if (unmarkedCellCount === 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-    
+    const player1 = `X`;
+    const player2 = 'O';
+    let _currentPlayer = player1;
     const victoryConditions = [
-        // An array of sub-arrays where each sub-array is
-        // representative of a particular set of indexes 0 to 8 (9 total).
-        // This will be used to more effeciently check if particular
-        // cells have matching values.
-        
-        // Assumes a 3x3 grid starting from the upper left corner and
-        // going from left to right for each row ending at the bottom right.
-        
         //Horizontals
         [0, 1, 2],
         [3, 4, 5],
@@ -238,122 +102,204 @@ const gameController = (() => {
         [2, 4, 6]
     ]
     
-    const checkVictory = () => {
-        // How to check where a specific value is in an array and all of its indeces if it is repeated.
-        // "Finding all the occurrences of an element":
-        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/indexOf
-        const indicesOfPlayer = [];
-        const cells = gameBoard.listCells();
-        const symbolOfPlayer = player;
-        
-        let currentIndex = cells.indexOf(symbolOfPlayer);
-        while (currentIndex !== -1) {
-            indicesOfPlayer.push(currentIndex);
-            currentIndex = cells.indexOf(symbolOfPlayer, currentIndex + 1);
+    // Differences between HTMLCollection vs. NodeList
+    // https://www.w3schools.com/jsref/met_document_queryselectorall.asp
+    const cells = document.getElementsByClassName("cell");
+    
+    const changePlayer = () => {
+        // Need to be careful about parameter names overwriting module names.
+        // Having a parameter named "currentPlayer" will cause subsequent uses
+        // of "currentPlayer" to refer to that parameter and NOT the module-scoped
+        // version. This tripped me up several times until I recognized
+        // what was happening. b/c of this I added the "_" to the module-scoped
+        // variable to help distinguish this from function-parameter versions.
+        if (_currentPlayer === player1) {
+            _currentPlayer = player2;
+        } else {
+            _currentPlayer = player1;
         }
-        // console.log(`Player: ${player}`);
-        // console.log(`indicesOfPlayer:  ${indicesOfPlayer}`);
-        
-        // If all of a singlular victoryConditions' sub-array values are in the
-        // the present indicesOfPlayer, that player has won. In other words, if
-        // a victoryConditions' sub-array is a subset of the indicesOfPlayer array
-        // then said player has won. This is due to a player potentially marking
-        // more cells that do not directly contribute to three symbols in a row.
-        // In other-other words... the victoryConditions' sub-array are a list of
-        // MINIMAL requirements for victory (all of your marks might not be the 3
-        // that get you victory).
-        
-        // console.log(`indicesOfPlayer: ${indicesOfPlayer}`);
-        for (let i = 0; i < victoryConditions.length; i++) {
-            // console.log(isSubset);
-            if (isSubset(indicesOfPlayer, victoryConditions[i])) {
-                // console.log(`Victory! Player: ${player} won!`);
-                return true
-            }
-        }
-        
-        // console.log(`No Victory`);
-        return false
     }
     
-    // Method of checking subsets:
-    // Javascript: Check if an Array is a Subset of Another Array
-    // https://fjolt.com/article/javascript-check-if-array-is-subset
+    const isEmpty = (index) => {
+        let symbol = gameBoard.getCell(index);
+        return ((symbol !== player1) && (symbol !== player2)) ? true : false;
+    }
+    
     const isSubset = (parentArray, subsetArray) => {
+        // Method of checking subsets:
+        // Javascript: Check if an Array is a Subset of Another Array
+        // https://fjolt.com/article/javascript-check-if-array-is-subset
         return subsetArray.every((element) => {
             return parentArray.includes(element)
         })
     }
     
-    const messageDiv = document.getElementById('results-msg');
-    
-    const resultsMesssage_Draw = () => {
-        messageDiv.innerText = `Round is a Draw.`;
-    }
-    
-    const resultsMesssage_Win = () => {
-        messageDiv.innerText = `Player ${player} Won.`;
-    }
-    
-    const resultsMesssage_Reset = () => {
-        messageDiv.innerText = ``;
-    }
-    
-    const isEmptyCell = (cell) => {
-        if ((gameBoard.getCell(cell) != player1) && (gameBoard.getCell(cell) != player2)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-    
-    const checkGameEnd = () => {
-        // Victory must be checked first or a final winning move
-        // will be read as a draw instead
-        if (checkVictory()) {
-            resultsMesssage_Win();
-            return true;
-        } else if (checkDraw()) {
-            resultsMesssage_Draw();
-            return true;
-        } else {
-            return false;
-        }
-    }
-    
-    const emptySpots = (inputBoard) => {
-        // console.log(`empty spots code begin`);
-        let emptyIndexSpots = [];
-        for (let i = 0; i < inputBoard.length; i++) {
-            // console.log(i);
-            if (inputBoard[i] === gameBoard.getDefault()) {
-                // console.log(`stuff pushed`)
-                emptyIndexSpots.push(i);
-            }
-        }
-        // console.log(`${emptyIndexSpots} empty spots code end`);
-        return emptyIndexSpots;
-    }
-
-    const playerVictory = (inputBoard, inputPlayer) => {
+    const checkWin = (inputBoard, playerSymbol) => {
+        // How to check where a specific value is in an array and all of its indeces if it is repeated.
+        // "Finding all the occurrences of an element":
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/indexOf
         const indicesOfPlayer = [];
         const cells = inputBoard;
-        const symbolOfPlayer = inputPlayer;
-        
-        let currentIndex = cells.indexOf(symbolOfPlayer);
+        let currentIndex = cells.indexOf(playerSymbol);
         
         while (currentIndex !== -1) {
             indicesOfPlayer.push(currentIndex);
-            currentIndex = cells.indexOf(symbolOfPlayer, currentIndex + 1);
+            currentIndex = cells.indexOf(playerSymbol, currentIndex + 1);
         }
         
+        // If all of a singlular victoryConditions' sub-array values are in the
+        // the present indicesOfPlayer, that player has won. In other words, if
+        // a victoryConditions' sub-array is a subset of the indicesOfPlayer array
+        // then said player has won. This is due to a player potentially marking
+        // more cells than needed to directly contribute to three symbols in a row.
+        // In other-other words... the victoryConditions' sub-array are a list of
+        // MINIMAL requirements for victory (all of your marks might not be the 3
+        // that get you victory). I remember some comments about how this method may
+        // fail if there are duplicates of values, but I didn't investigate that.
+        // Either case is moot since no duplicate values are introduced in my code.
         for (let i = 0; i < victoryConditions.length; i++) {
             if (isSubset(indicesOfPlayer, victoryConditions[i])) {
                 return true
             }
         }
-                
+        
         return false
+    }
+    
+    const checkFull = () => {
+        // This function enables detection of the "draw" end-state
+        const board = gameBoard.listCells();
+        
+        // Difference between for...in and for...of loops
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Loops_and_iteration#for...of_statement
+        let unmarkedCellCount = 0;
+        
+        for (const cell of board) {
+            if ((cell !== player1) && (cell !== player2)) {
+                unmarkedCellCount++;
+            }
+        }
+        
+        if (unmarkedCellCount === 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    const messageDiv = document.getElementById('results-msg');
+    
+    const resultsMesssage_Reset = () => {
+        messageDiv.innerText = ``;
+        messageDiv.classList.add("invisible");
+    }
+    
+    const resultsMessage = (inputPlayer, isWin) => {
+        if (isWin === true) {
+            messageDiv.innerText = `Player ${inputPlayer} Won.`;
+            messageDiv.classList.remove("invisible");
+        } else {
+            messageDiv.innerText = `Round is a Draw.`;
+            messageDiv.classList.remove("invisible");
+        }
+    }
+    
+    const stopRound = () => {
+        // How to remove eventListeners, this prevents additional moves
+        // beyond an end-state condition such as a win/loss/draw.
+        // How To Remove All Event Listeners From An Element Using JavaScript:
+        // https://learnshareit.com/how-to-remove-all-event-listeners-from-an-element-using-javascript/
+        for (let i = 0; i < cells.length; i++) {
+            const clone = cells[i].cloneNode(true);
+            // Even though replace isn't used again, this overall
+            // method is a quick way to disable the cell's clickability.
+            const replace = cells[i].replaceWith(clone);
+        }
+        _currentPlayer = player1;
+    }
+    
+    // Using event handlers with drop down menus:
+    // What event handler do I need to use for a drop down menu list in JavaScript?
+    // https://stackoverflow.com/questions/33932395/what-event-handler-do-i-need-to-use-for-a-drop-down-menu-list-in-javascript
+    // https://www.w3schools.com/jsref/event_onchange.asp
+    const dropdownItem = document.getElementById(`gameModeSelect`);
+    let gameMode = dropdownItem.value;
+    document.getElementById("gameModeSelect").onchange = function() {
+        getSelection();
+        stopRound();
+        displayController.resetBoard();
+    };
+    
+    const getSelection = () => {
+        gameMode = dropdownItem.value;
+    }
+    
+    const startRound = () => {
+        // Pass Parameters into an even listener
+        // https://www.w3schools.com/js/js_htmldom_eventlistener.asp
+        player = player1;
+        for (let i = 0; i < cells.length; i++) {
+            cells[i].addEventListener('click', function(){ playerMove(i, _currentPlayer, gameMode); });
+        }
+    }
+    
+    startRound();
+    
+    const playerMove = (index, inputPlayer, gameMode) => {
+        let currentBoard = gameBoard.listCells();
+        
+        if (isEmpty(index)) {
+
+            gameBoard.setCell(index, inputPlayer);
+            
+            if (checkWin(currentBoard, inputPlayer)) {
+                resultsMessage(inputPlayer, true);
+                stopRound();
+            } else if (checkFull()) {
+                resultsMessage(inputPlayer, false);
+                stopRound();
+            } else if (gameMode === `computer`) {
+                changePlayer();
+                
+                // Using "_currentPlayer" b/c "changePlayer()" does not
+                // change "inputPlayer", it only changes "_currentPlayer".
+                // I.e. I need the module-scoped value, not the parameter.
+                // (This was producing a bug that tripped me up until I
+                // realized what was happening, I don't want to forget :D)
+                let choice = minimax(currentBoard, _currentPlayer).index;
+                gameBoard.setCell(choice, _currentPlayer);
+                
+                if(checkWin(currentBoard, _currentPlayer)) {
+                    resultsMessage(_currentPlayer, true);
+                    stopRound();
+                } else if (checkFull()) {
+                    resultsMessage(_currentPlayer, false);
+                    stopRound();
+                } else {
+                    changePlayer();
+                }
+            } else if (gameMode === `human`) {
+                changePlayer()
+            } else {
+                console.error(`turn bug`)
+            }
+        }
+
+        displayController.refreshDisplay();
+    }
+    
+    const emptySpots = (inputBoard) => {
+        // Returns array of the indecies in inputBoard that are "empty"
+        let emptyIndexSpots = [];        
+        let pattern = /[0-9]/;    
+        
+        for (let i = 0 ; i < inputBoard.length; i++) {
+            if(pattern.test(inputBoard[i])) {
+                emptyIndexSpots.push(i);
+            }
+        }
+        
+        return emptyIndexSpots;
     }
     
     // Minimax algorithm research:
@@ -368,7 +314,17 @@ const gameController = (() => {
         // Sebastian Lague
         // https://www.youtube.com/watch?v=l-hh51ncgDI
     
-    // For the idea on how to "grade" base case utility values (ratings for Win/Loss/Draw)
+    // For the idea on how to "grade" base case utility values (ratings for Win/Loss/Draw).
+    // I ended up not using it, but it is a method that can be hybridized with a minimax
+    // function that accepts a parameter of "depth" such as one shown by Sebastian Lague's
+    // video. This would enable the minimax algorithm to not require guaranteed ends to the
+    // game, such as tic-tac-toe, but instead would let the algorithm look a certain number
+    // of moves "ahead" of what the board currently is at (like chess). To prevent predictability
+    // this can also be hybridized with a randomizing function if two or more choices end up
+    // with the same or similar score. This way the computer would be intelligent, though not
+    // PURELY deterministic, making the same choices every single time a game is played a specific
+    // way. It would choose among the better moves, but not always the same move among them.
+    // Sometimes the best move doesn't seem the best given a certain depth of forsight.
         // Coding an UNBEATABLE Tic Tac Toe AI (Game Theory Minimax Algorithm EXPLAINED)
         // Kylie Ying
         // https://youtu.be/fT3YWCKvuQE
@@ -378,142 +334,72 @@ const gameController = (() => {
         // freeCodeCamp.org
         // https://youtu.be/P2TcQ3h0ipQ
     
-    // Plan:
-    // The function will return an object containing an 'index' value
-    // coresponding to an empty spot on the board and a 'score' value associated
-    // with that index. This index will be the calculated place for the given player
-    // to place their mark if they want to win in the least number of moves.
-    
-    // Take inputs of a board array and the current player
-    // the board array consists of elements that are either:
-    //      the default value
-    //      player1's symbol
-    //      player2's symbol
-    // The current player is either player1 or player2 which are
-    // objects that return a unique symbol per player ("X" & "O")
-    const minimax = (currentBoard, currentPlayer) => {
-        // Record array of index's in board that are empty (available for a move)
-        let emptySpotsArray = emptySpots(currentBoard);
-        console.log(emptySpotsArray);
-        let numberOfSpots = emptySpotsArray.length;
+    const minimax = (inputBoard, inputPlayer) => {
+        let emptySpotsArray = emptySpots(inputBoard);
         
-        // Check win base cases:
-        //      player 1 win, return their score (+/-)
-        //      player 2 win, return their score (-/+)
-        //      tie, return tie score
-        //          Have score be calulated based upon the number empty spots remaining,
-        //          where if there are more spots unused upon a victory corresponding to
-        //          a higher score than if there are less spots unused and a victory.
-        //          Formula: (+/-)1 * n, where n is the number of unused spots remaining
-        //          and the '1' to differentiate it from the tie's score of 0. The score's
-        //          magnitute can increate but it's sign is determined by the player.
-        if (playerVictory(currentBoard, currentPlayer)) {
-            // console.log(`P1 Victory detected`);
+        // Base cases for recursion
+        if (checkWin(inputBoard, player1)) {
             return {score: 10}
-        } else if (playerVictory(currentBoard, currentPlayer)) {
-            // console.log(`P2 Victory detected`);
+        } else if (checkWin(inputBoard, player2)) {
             return {score: -10}
-        } else if (numberOfSpots === 0) {
-            // console.log(`Draw detected`);
+        } else if (emptySpotsArray.length === 0) {
             return {score: 0}
         }
         
-        // Create/reset an array that stores "move" objects.
-        // Each move object will be filled later with "index" and "score" keys
-        // where index is the chosen move's empty square that will be filled and
-        // the score is the means that players (the algorithm) can rank which move
-        // is more valuable to get to a victory faster.
-        
         let availableMoves = [];
         
-        // Iterate through the previously created array of empty spots
-        //      Create/reset an empty 'move' object that will be modified and then
-        //      pushed to the 'moves' array.
-        //      Store in the 'move' object the current spot (index).
-        //      Change the board's current index to the current player's mark,
-        //      this will be reverted later for the next iterative step. This is how
-        //      each possible move can be explored, with all of its possible sub-moves.
-        for (let i = 0; i < numberOfSpots; i++) {
-            // console.log(`loop ${i} started`)
+        // Recursion section
+        for (let i = 0; i < emptySpotsArray.length; i++) {
+            let boardIndex = emptySpotsArray[i];
+            let move = {index: boardIndex, score: undefined};
+            let previousBoardValue = inputBoard[boardIndex];
             
-            let move = {index: i}
-            let previousBoardValue = currentBoard[i];
-            currentBoard[i] = currentPlayer;
-            
-        //      Recursive part of the algorithm:
-        //      Check who the current player is:
-        //          If player2, then:
-        //              Store in a temporary obj variable the results of calling
-        //              the minimax function passed with the changed board and player1.
-        //              Then assign the temporary obj's 'score' value to the 'move' object's
-        //              'score' value.
-        //          If player1, then:
-        //              Same as above, but call the minimax with player2 instead.
-            if (currentPlayer === player2) {
-                let miniMaxResult = minimax(currentBoard, player1);
+            // Explore what making a move in this spot would implicate
+            inputBoard[boardIndex] = inputPlayer;
+            if (inputPlayer === player1) {
+                let miniMaxResult = minimax(inputBoard, player2);
                 move.score = miniMaxResult.score;
-                // console.log(`Recursion p2`);
-            } else if (currentPlayer === player1) {
-                let miniMaxResult = minimax(currentBoard, player2);
+            } else if (inputPlayer === player2) {
+                let miniMaxResult = minimax(inputBoard, player1);
                 move.score = miniMaxResult.score;
-                // console.log(`Recursion p1`);                
             } else {
-                // console.log(`Error in recursion`);
+                console.error(`Error in recursion`);
             }
             
-            //      Revert the board back to what it was at the begining (undo the chosen move).
-            //      This can be done by changing the current position back to the default value.
-            //      Add the now modified 'move' object to the 'moves' array.
-            currentBoard[i] = previousBoardValue;
-                        
-            //  End of looping code
+            // Reset the board in order to explore other choices
+            inputBoard[boardIndex] = previousBoardValue;
+            
+            availableMoves.push(move);
         }
         
+        let bestMoveIndex = undefined;
+        let bestScore = undefined;
         
-        //  Create a variable to record the index of the correspondingly best move for the
-        //  passed-through player.
-        let bestMoveIndex;
-        
-        //  Check if player2
-        //      Create a temporary variable for the current player's score with a large
-        //      magnitude corresponding
-        //      to the worse score this player can have, for a (+) player that would
-        //      be -infinity or a sufficently large (-) number.
-        //      Iterate through the moves array and check if each move's score is better
-        //      than the current player's score. If so, then update their score to that
-        //      value and update the previously created 'best move' variable to the index
-        //      corresponding to that score.
-        //  if player 1
-        //      Same as above but w/ opposite signs; if player2 wants to max, then
-        //      player1 wants to min and vice versa.
-        if (currentPlayer === player2) {
-            let bestScore = Number.NEGATIVE_INFINITY;
+        if (inputPlayer === player1) {
+            bestScore = -10000;
             for (let i = 0; i < availableMoves.length; i++) {
                 if (availableMoves[i].score > bestScore) {
                     bestScore = availableMoves[i].score;
                     bestMoveIndex = i;
                 }
             }
-        } else if (currentPlayer === player1) {
-            let bestScore = Number.POSITIVE_INFINITY;
+        } else if (inputPlayer === player2) {
+            bestScore = 10000;
             for (let i = 0; i < availableMoves.length; i++) {
                 if (availableMoves[i].score < bestScore) {
                     bestScore = availableMoves[i].score;
                     bestMoveIndex = i;
                 }
             }
+        } else {
+            console.error(`Error in score updating`);
         }
         
-        // Finally, the minimax function should return an object containing
-        // the index of the best move and that move's score. Exp: {index: 2, score: -10}.
         return availableMoves[bestMoveIndex];
     }
     
-        return {
-            startRound,
-            getPlayer,
-            resultsMesssage_Reset,
-            computerChoice_Random
-        }
-    })();
-    
+    return {
+        startRound,
+        resultsMesssage_Reset, emptySpots
+    }
+})();

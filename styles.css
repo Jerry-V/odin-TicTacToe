@@ -1,9 +1,16 @@
 * {
     box-sizing: border-box;
+    /* How to disable text select
+    https://www.w3schools.com/howto/howto_css_disable_text_selection.asp */
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE 10 and IE 11 */
+    user-select: none; /* Standard syntax */
 }
 
 :root {
     --grey-border: solid 2px grey;
+    --border-radius: 1rem;
+    --padding: .3rem 1rem;
 }
 
 body {
@@ -35,7 +42,7 @@ body {
     border: var(--grey-border);
     padding: .5rem;
     gap: .5rem;
-    border-radius: 10px;
+    border-radius: var(--border-radius);
 }
 
 .cell {
@@ -47,7 +54,7 @@ body {
     justify-content: center;
     border: solid green 3px;
     background-color: lightgreen;
-    border-radius: 10px;
+    border-radius: var(--border-radius);
     font-size: 4rem;
 }
 
@@ -73,16 +80,27 @@ https://www.w3schools.com/csS/css3_buttons.asp */
 }
 
 #gameMode-container, #reset-btn, #results-msg {
-    height: 2rem;
+    height: fit-content;
     background-color: whitesmoke;
-    padding: 1.5rem 2rem;
+    padding: var(--padding);
     color: green;
     font-size: 1.5em;
     border: var(--grey-border);
-    border-radius: 1rem;
+    border-radius: var(--border-radius);
     display: flex;
     align-items: center;
     gap: 1rem;
+}
+
+#gameMode-container {
+    flex-direction: column;
+    gap: .25rem;
+}
+
+h1 {
+    margin: 0px;
+    font-style: italic;
+    text-decoration: underline;
 }
 
 .invisible {

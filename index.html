@@ -6,16 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tic Tac Toe</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="javascript_copy.js" defer></script>
+    <script src="javascript.js" defer></script>
 </head>
 <body>
     <div id="main-container">
         <div id="gameMode-container">
-            <label for="GameModes">Select Opponent:</label>
-            <select name="GameModes" id="gameModeSelect" onchange="getSelection()">
-                <option value="human">Human</option>
-                <option value="computer">Computer</option>
-            </select>
+            <h1>Tic - Tac - Toe</h1>
+            <div>
+                <label for="GameModes">Select Opponent:</label>
+                <select name="GameModes" id="gameModeSelect" onchange="getSelection()">
+                    <option value="human">Human</option>
+                    <option value="computer">Computer</option>
+                </select>
+            </div>
         </div>
         <div id="grid-container">
             <div class="cell" id="cell-01"></div>
